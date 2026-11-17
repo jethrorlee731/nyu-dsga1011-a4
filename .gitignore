@@ -1,4 +1,18 @@
-.DS_Store
+# Model checkpoints and run outputs (large; checkpoints go to Google Drive)
+**/baseline_runs/
+**/checkpoints/
+**/out/
+**/out_augmented/
+*.safetensors
+*.bin
+*.pt
+*.ckpt
+
+# Logs, caches, scratch
+**/logs/
+**/wandb/
 __pycache__/
 *.pyc
-.claude/settings.local.json
+.ipynb_checkpoints/
+.cache/
+.idea/

@@ -1,0 +1,17 @@
+Validation performed before delivery:
+- Python compileall: passed for all delivered Python files.
+- bash -n run.sh: passed.
+- test_core.py: 5 tests passed.
+  Covers preprocessing/quoted SQL preservation, paired input checks and unlabeled
+  test loading, metric edge cases, SQL order/read-only behavior, pickle format,
+  and terminating a long-running recursive SQL query.
+- 100 randomized metric comparisons against the functions extracted directly
+  from the uploaded assignment utils.py: passed within 1e-12.
+- Uploaded input files checked: 4,225 train pairs, 466 dev pairs, 432 test inputs.
+- No pretrained weights downloaded, no model trained, no F1 measured locally.
+- test_model.py is supplied but NOT executed here (PyTorch/Transformers absent).
+  It checks a tiny random T5's label shift, padding loss invariance, gradient
+  accumulation, forward/backward, generation, checkpoint reload, optimizer state,
+  RNG restoration, and epoch sampler determinism without network downloads.
+- The assignment flight_database.db was not uploaded. Execution tests used a
+  temporary toy SQLite database; actual assignment SQL must be checked on HPC.

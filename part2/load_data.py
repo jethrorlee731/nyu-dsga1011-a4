@@ -13,6 +13,15 @@ import torch
 
 PAD_IDX = 0
 
+def preprocess_nl(text):
+    # Normalize whitespace and add the task prefox
+    text = " ".join(text.split())
+    return "translate to SQL: " + text
+
+def preprocess_sql(text):
+    # Preserves SQL syntax and quoted values
+    return text.strip()
+
 class T5Dataset(Dataset):
 
     def __init__(self, data_folder, split):
@@ -29,7 +38,30 @@ class T5Dataset(Dataset):
         # TODO
 
     def process_data(self, data_folder, split, tokenizer):
-        # TODO
+        # Load natural-language inputs for every split.
+        nl_path = os.path.join(data_folder, f"{split}.nl")
+        nl_lines = load_lines(nl_path)
+
+        # SQL targets are available only for train and dev.
+        if split != "test":
+            sql_path = os.path.join(data_folder, f"{split}.sql")
+            sql_lines = load_lines(sql_path)
+
+            if len(nl_lines) != len(sql_lines):
+                raise ValueError(
+                    f"{split}: natural-language and SQL counts do not match"
+                )
+        else:
+            sql_lines = None
+
+        # Apply preprocessing before tokenization.
+        nl_lines = [preprocess_nl(text) for text in nl_lines]
+
+        if sql_lines is not None:
+            sql_lines = [preprocess_sql(text) for text in sql_lines]
+
+        # TODO: Tokenize nl_lines and sql_lines, then store the examples
+        # for __len__() and __getitem__().
     
     def __len__(self):
         # TODO

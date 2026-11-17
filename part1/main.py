@@ -38,14 +38,39 @@ def do_train(args, model, train_dataloader, save_dir="./out"):
     progress_bar = tqdm(range(num_training_steps))
 
     ################################
-    ##### YOUR CODE BEGINGS HERE ###
-
     # Implement the training loop --- make sure to use the optimizer and lr_sceduler (learning rate scheduler)
     # Remember that pytorch uses gradient accumumlation so you need to use zero_grad (https://pytorch.org/tutorials/recipes/recipes/zeroing_out_gradients.html)
     # You can use progress_bar.update(1) to see the progress during training
     # You can refer to the pytorch tutorial covered in class for reference
 
-    raise NotImplementedError
+    # Use the same device as the model
+    device = next(model.parameters()).device
+
+    for epoch in range(num_epochs):
+        for batch in train_dataloader:
+            batch = {key: value.to(device) for key, value in batch.items()}
+
+            # Clear gradients left over from the previous batch
+            optimizer.zero_grad()
+
+            # Forward pass; providing labels lets BERT compute the loss
+            outputs = model(**batch)
+            loss = outputs.loss
+
+            # Compute gradients and update model parameters
+            loss.backward()
+            optimizer.step()
+
+            # Update the learning rate after each optimizer step
+            lr_scheduler.step()
+
+            progress_bar.update(1)
+            progress_bar.set_postfix(
+                epoch=epoch + 1,
+                loss=loss.item(),
+            )
+
+    progress_bar.close()
 
     ##### YOUR CODE ENDS HERE ######
 
@@ -86,16 +111,43 @@ def do_eval(eval_dataloader, output_dir, out_file):
 
 # Created a dataladoer for the augmented training dataset
 def create_augmented_dataloader(args, dataset):
-    ################################
-    ##### YOUR CODE BEGINGS HERE ###
+    from datasets import concatenate_datasets
 
-    # Here, 'dataset' is the original dataset. You should return a dataloader called 'train_dataloader' -- this
-    # dataloader will be for the original training split augmented with 5k random transformed examples from the training set.
-    # You may find it helpful to see how the dataloader was created at other place in this code.
+    # Select 5,000 random examples from the original training split.
+    selected_dataset = (
+        dataset["train"]
+        .shuffle(seed=42)
+        .select(range(5000))
+    )
 
-    raise NotImplementedError
+    # Transform the selected copies.
+    transformed_dataset = selected_dataset.map(
+        custom_transform,
+        load_from_cache_file=False,
+    )
 
-    ##### YOUR CODE ENDS HERE ######
+    # Combine all original training examples with the transformed copies.
+    augmented_dataset = concatenate_datasets([
+        dataset["train"],
+        transformed_dataset,
+    ])
+
+    # Follow the same preprocessing as the test dataloader.
+    tokenized_dataset = augmented_dataset.map(
+        tokenize_function,
+        batched=True,
+        load_from_cache_file=False,
+    )
+    tokenized_dataset = tokenized_dataset.remove_columns(["text"])
+    tokenized_dataset = tokenized_dataset.rename_column("label", "labels")
+    tokenized_dataset.set_format("torch")
+
+    # Shuffle so original and transformed examples mix during training.
+    train_dataloader = DataLoader(
+        tokenized_dataset,
+        batch_size=args.batch_size,
+        shuffle=True,
+    )
 
     return train_dataloader
 
